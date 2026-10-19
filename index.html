@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản lý Gara Ô tô</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Be+Vietnam+Pro:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: thanh tiêu đề + tab ngang, nội dung một cột rộng tối đa 1080px; bảng cuộn ngang trong khung riêng */
+:root{
+  --bg:#EDF0F1; --surface:#FFFFFF; --ink:#14222B; --muted:#5B6B75; --line:#D5DCE0;
+  --accent:#0E6377; --accent-ink:#FFFFFF; --accent-soft:#D9ECF0;
+  --ok:#1E7A4C; --ok-soft:#DDF1E6; --warn:#8A5200; --warn-soft:#FBEBCF;
+  --bad:#B3261E; --bad-soft:#F9DEDC; --info:#1F5FA8; --info-soft:#DCE8F6;
+  --font-display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-body:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A20; --surface:#17252D; --ink:#E6EDF0; --muted:#93A4AD; --line:#2B3C45;
+    --accent:#4FB6CC; --accent-ink:#08222A; --accent-soft:#14343D;
+    --ok:#56C58A; --ok-soft:#15321F; --warn:#F0B24A; --warn-soft:#3A2B10;
+    --bad:#F2877F; --bad-soft:#3D1B19; --info:#7DB3EE; --info-soft:#152B45;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1A20; --surface:#17252D; --ink:#E6EDF0; --muted:#93A4AD; --line:#2B3C45;
+  --accent:#4FB6CC; --accent-ink:#08222A; --accent-soft:#14343D;
+  --ok:#56C58A; --ok-soft:#15321F; --warn:#F0B24A; --warn-soft:#3A2B10;
+  --bad:#F2877F; --bad-soft:#3D1B19; --info:#7DB3EE; --info-soft:#152B45;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+.wrap{max-width:1080px;margin:0 auto}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:18px 10px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-family:var(--font-display);font-weight:700;font-size:34px;letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1;text-wrap:balance}
+.brand span{color:var(--muted);font-size:13px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:2px solid var(--line);margin-bottom:22px;scrollbar-width:thin}
+nav.tabs button{font:inherit;font-weight:500;background:none;border:0;color:var(--muted);padding:10px 14px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px}
+nav.tabs button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:hover{color:var(--ink)}
+h2{font-family:var(--font-display);font-size:26px;letter-spacing:.02em;text-transform:uppercase;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:0 0 10px;font-weight:600}
+.bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.bar .grow{flex:1 1 220px;min-width:0}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:var(--surface)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn.ghost{background:none}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.tile .k{font-size:13px;color:var(--muted)}
+.tile .v{font-family:var(--font-display);font-weight:700;font-size:38px;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile .v.warn{color:var(--warn)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:22px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--accent-soft)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.plate{display:inline-block;font-family:var(--font-mono);font-weight:500;font-size:13px;border:2px solid var(--ink);border-radius:4px;padding:1px 7px;background:var(--surface);letter-spacing:.04em;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.info{background:var(--info-soft);color:var(--info)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.muted{background:var(--accent-soft);color:var(--accent)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.muted{color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:4px 12px;border-radius:99px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.bays{display:grid;gap:10px}
+.bay{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;padding:10px 12px;cursor:pointer}
+.bay:hover{border-color:var(--accent)}
+.bay .who{min-width:0;flex:1 1 160px}
+.bay .who b{display:block;overflow-wrap:anywhere}
+.revbars{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end;height:170px;padding-top:8px}
+.rb{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%;min-width:0}
+.rb .col{width:100%;max-width:56px;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px}
+.rb .val{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rb .mo{font-size:12px;font-weight:600}
+.detail-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.detail-head .meta{display:grid;gap:2px;min-width:0}
+.totals{margin-left:auto;width:min(100%,320px);display:grid;gap:6px;margin-top:14px}
+.totals div{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.totals .grand{font-family:var(--font-display);font-size:28px;font-weight:700;border-top:2px solid var(--ink);padding-top:6px}
+.addline{display:grid;grid-template-columns:140px minmax(0,1fr) 90px auto;gap:8px;align-items:end;margin-top:14px}
+@media (max-width:640px){.addline{grid-template-columns:1fr 1fr}.addline .wide{grid-column:1 / -1}}
+.modal{position:fixed;inset:0;background:rgba(10,20,26,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 16px 16px;overflow-y:auto;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);border-radius:10px;padding:20px;width:min(100%,480px);margin-top:4vh}
+.sheet h2{margin-bottom:14px}
+.sheet form{display:grid;gap:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row.end{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:30;max-width:calc(100% - 32px);font-size:14px}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+pre.prompt{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--font-body);font-size:14px;line-height:1.6;margin:0}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+@media (prefers-reduced-motion:no-preference){.btn{transition:background .15s,border-color .15s}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Quản lý Gara Ô tô</h1><span>Dữ liệu lưu trong trình duyệt này</span></div>
+    <button class="btn small ghost" data-act="reset" id="btn-reset">Nạp lại dữ liệu mẫu</button>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Chức năng"></nav>
+  <main id="main"></main>
+</div>
+<div class="modal" id="modal" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<template id="prompt-src"># PROMPT ALL (FINAL): Phần mềm Quản lý Gara Ô tô
+
+## A. PROMPT CÓ CẤU TRÚC (dán vào AI để sinh web)
+
+**1. Role (Vai trò):** Bạn là lập trình viên web full-stack kiêm chuyên gia nghiệp vụ, có hơn 10 năm làm phần mềm cho gara ô tô tại Việt Nam, viết code sạch và giao diện dễ dùng cho người không rành công nghệ.
+
+**2. Context (Bối cảnh):** Gara quy mô vừa (5 đến 10 nhân viên) đang ghi sổ tay và Excel nên hay nhầm tồn kho và thất lạc phiếu sửa chữa. Đây là bản demo môn học, cần web chạy ngay trên trình duyệt, có link công khai, không cần máy chủ. Tiền tệ VND, VAT 10%, biển số dạng 43A-123.45.
+
+**3. Task (Nhiệm vụ):** Xây web quản lý gara gồm:
+1. Tổng quan: xe đang trong gara, phiếu chờ thanh toán, doanh thu tháng, phụ tùng sắp hết, biểu đồ doanh thu 6 tháng.
+2. Khách hàng và Xe: thêm, tìm kiếm, xóa (xe gồm biển số, hãng, dòng, năm, số km, chủ xe).
+3. Phiếu sửa chữa: tạo phiếu, thêm dịch vụ và phụ tùng, 4 trạng thái (Tiếp nhận, Đang sửa, Hoàn thành, Đã thanh toán), tự tính VAT và tổng cộng.
+4. Kho phụ tùng: tồn kho, mức tối thiểu, nhập thêm, tự trừ kho khi thêm vào phiếu và hoàn lại khi bỏ ra, cảnh báo sắp hết.
+5. Hóa đơn: danh sách phiếu đã thanh toán, xem chi tiết, tổng doanh thu.
+6. Có dữ liệu mẫu thực tế để mở lên là thấy cách hoạt động.
+
+**4. Constraints (Ràng buộc):**
+- ĐƯỢC: HTML, CSS, JavaScript thuần trong một trang; lưu bằng localStorage; giao diện tiếng Việt có dấu; dùng tốt trên điện thoại và máy tính; kiểm tra dữ liệu nhập (biển số không trùng, số lượng lớn hơn 0, không bán quá tồn kho).
+- KHÔNG ĐƯỢC: dùng framework hay thư viện ngoài; dùng alert, confirm, prompt; xóa khách hàng đang có xe hoặc xe đã có phiếu; bịa tính năng thanh toán online hay SMS; dùng lorem ipsum.
+
+**5. Output Format (Định dạng):** Trả về một file HTML hoàn chỉnh chạy được ngay. Menu tab ở đầu trang, dữ liệu dạng bảng, trạng thái dạng nhãn màu, tiền dạng 1.250.000 ₫. Sau code, viết tối đa 5 dòng hướng dẫn dùng và giới hạn đã biết.
+
+---
+
+## B. SO SÁNH: PROMPT ĐƠN GIẢN và PROMPT CÓ CẤU TRÚC
+
+**Prompt đơn giản:** "Làm cho tôi một web quản lý gara ô tô."
+
+| Tiêu chí | Prompt đơn giản | Prompt có cấu trúc |
+|---|---|---|
+| Chức năng | AI tự đoán, thường chỉ có bảng xe và form thêm xe | Đủ 6 module đúng nghiệp vụ |
+| Nghiệp vụ Việt Nam | Thiếu VAT, biển số, VND | Có VAT 10%, biển số, định dạng VND |
+| Kho phụ tùng | Hay bỏ qua hoặc không liên kết với phiếu | Tự trừ và hoàn kho, cảnh báo sắp hết |
+| Kỹ thuật | Hay cần framework hoặc backend nên khó chạy ngay | Một file HTML, chạy và publish được |
+| Giao diện | Chung chung, lẫn tiếng Anh | Tiếng Việt, dùng được trên điện thoại |
+| Kiểm tra dữ liệu | Ít | Có ràng buộc rõ |
+| Số lần chỉnh sửa | Nhiều vòng hỏi lại | Ít, dùng được ngay |
+
+Nhận xét: prompt đơn giản để AI tự điền chỗ trống nên kết quả khác nhau mỗi lần; prompt có cấu trúc thu hẹp khoảng trống nên ổn định và dễ đối chiếu barem.
+
+---
+
+## C. ĐÁNH GIÁ và TỐI ƯU (Prompt Refinement)
+
+**Kinh nghiệm rút ra**
+1. Nêu rõ người dùng và quy mô để AI chọn mức phức tạp vừa đủ.
+2. Liệt kê chức năng theo danh sách đánh số, dễ đối chiếu hơn đoạn văn.
+3. Ràng buộc có cả "được" và "không được" giúp giảm lỗi lặt vặt.
+4. Chỉ rõ định dạng đầu ra (một file HTML) để chạy được ngay.
+5. Dữ liệu mẫu thực tế giúp người chấm hiểu phần mềm nhanh.
+
+**Có thể cải thiện:** phân quyền (chủ gara, cố vấn, thợ); lịch hẹn và nhắc bảo dưỡng theo số km; xuất hóa đơn PDF; cơ sở dữ liệu thật để nhiều máy dùng chung.
+</template>
+
+<script>
+(function(){
+  var KEY='gara-auto-v1';
+  var uid=function(){return Math.random().toString(36).slice(2,9)};
+  var fmt=function(n){return new Intl.NumberFormat('vi-VN').format(Math.round(n))+' ₫'};
+  var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+  var STATUS=[
+    {k:'tiepnhan',t:'Tiếp nhận',c:'warn',next:'Bắt đầu sửa'},
+    {k:'dangsua',t:'Đang sửa',c:'info',next:'Hoàn thành'},
+    {k:'hoanthanh',t:'Hoàn thành',c:'ok',next:'Thanh toán'},
+    {k:'dathanhtoan',t:'Đã thanh toán',c:'muted',next:null}
+  ];
+  var st=function(k){return STATUS.filter(function(s){return s.k===k})[0]};
+  var MECH=['Trần Văn Hùng','Lê Quốc Bảo','Nguyễn Minh Tuấn','Phạm Đức Long'];
+  var VAT=0.1;
+
+  function daysAgo(n){var d=new Date();d.setDate(d.getDate()-n);return d.toISOString()}
+
+  function seed(){
+    var c=[
+      {id:'c1',name:'Nguyễn Thị Lan',phone:'0905 123 456',address:'12 Lê Duẩn, Hải Châu, Đà Nẵng'},
+      {id:'c2',name:'Trần Quang Vinh',phone:'0914 778 902',address:'88 Nguyễn Văn Linh, Thanh Khê, Đà Nẵng'},
+      {id:'c3',name:'Công ty TNHH Du lịch Biển Xanh',phone:'0236 3822 118',address:'45 Võ Nguyên Giáp, Sơn Trà, Đà Nẵng'},
+      {id:'c4',name:'Lê Hoàng Nam',phone:'0935 641 220',address:'7 Hà Huy Tập, Liên Chiểu, Đà Nẵng'}
+    ];
+    var v=[
+      {id:'v1',plate:'43A-123.45',brand:'Toyota',model:'Vios',year:2019,km:68400,customerId:'c1'},
+      {id:'v2',plate:'43A-567.89',brand:'Hyundai',model:'Accent',year:2021,km:41250,customerId:'c2'},
+      {id:'v3',plate:'43B-012.34',brand:'Ford',model:'Transit',year:2018,km:152300,customerId:'c3'},
+      {id:'v4',plate:'43K-345.67',brand:'Mazda',model:'CX-5',year:2022,km:28900,customerId:'c4'},
+      {id:'v5',plate:'43A-246.80',brand:'Kia',model:'Morning',year:2017,km:96100,customerId:'c1'}
+    ];
+    var p=[
+      {id:'p1',sku:'DN-5W30',name:'Dầu nhớt 5W-30 (lít)',price:185000,stock:48,min:20},
+      {id:'p2',sku:'LL-VIOS',name:'Lọc dầu Toyota Vios',price:95000,stock:14,min:6},
+      {id:'p3',sku:'LG-ACC',name:'Lọc gió Hyundai Accent',price:130000,stock:5,min:6},
+      {id:'p4',sku:'MP-TRC',name:'Má phanh trước (bộ)',price:640000,stock:9,min:4},
+      {id:'p5',sku:'BG-NGK',name:'Bugi NGK Iridium',price:165000,stock:3,min:8},
+      {id:'p6',sku:'AQ-GS55',name:'Ắc quy GS 55Ah',price:1650000,stock:4,min:2},
+      {id:'p7',sku:'NL-MAT',name:'Nước làm mát (can 4L)',price:210000,stock:12,min:5}
+    ];
+    var s=[
+      {id:'s1',name:'Công thay dầu động cơ',price:120000},
+      {id:'s2',name:'Công thay má phanh',price:350000},
+      {id:'s3',name:'Cân chỉnh thước lái',price:300000},
+      {id:'s4',name:'Công thay ắc quy',price:100000},
+      {id:'s5',name:'Kiểm tra tổng quát 30 hạng mục',price:250000}
+    ];
+    function it(t,ref,name,qty,price){return {id:uid(),type:t,refId:ref,name:name,qty:qty,price:price}}
+    var o=[
+      {id:'o1',code:'PSC-0001',vehicleId:'v3',desc:'Phanh kêu khi đạp, xe rung ở tốc độ 80 km/h',mechanic:MECH[0],status:'dangsua',date:daysAgo(1),paidAt:null,
+        items:[it('part','p4','Má phanh trước (bộ)',1,640000),it('service','s2','Công thay má phanh',1,350000)]},
+      {id:'o2',code:'PSC-0002',vehicleId:'v4',desc:'Bảo dưỡng định kỳ 30.000 km',mechanic:MECH[1],status:'tiepnhan',date:daysAgo(0),paidAt:null,items:[]},
+      {id:'o3',code:'PSC-0003',vehicleId:'v2',desc:'Thay dầu, lọc gió, kiểm tra tổng quát',mechanic:MECH[2],status:'hoanthanh',date:daysAgo(2),paidAt:null,
+        items:[it('part','p1','Dầu nhớt 5W-30 (lít)',4,185000),it('part','p3','Lọc gió Hyundai Accent',1,130000),it('service','s1','Công thay dầu động cơ',1,120000),it('service','s5','Kiểm tra tổng quát 30 hạng mục',1,250000)]},
+      {id:'o4',code:'PSC-0004',vehicleId:'v1',desc:'Thay dầu và lọc dầu',mechanic:MECH[3],status:'dathanhtoan',date:daysAgo(6),paidAt:daysAgo(6),
+        items:[it('part','p1','Dầu nhớt 5W-30 (lít)',4,185000),it('part','p2','Lọc dầu Toyota Vios',1,95000),it('service','s1','Công thay dầu động cơ',1,120000)]},
+      {id:'o5',code:'PSC-0005',vehicleId:'v5',desc:'Xe khó đề, thay ắc quy',mechanic:MECH[0],status:'dathanhtoan',date:daysAgo(14),paidAt:daysAgo(14),
+        items:[it('part','p6','Ắc quy GS 55Ah',1,1650000),it('service','s4','Công thay ắc quy',1,100000)]},
+      {id:'o6',code:'PSC-0006',vehicleId:'v3',desc:'Thay nước làm mát, cân chỉnh thước lái',mechanic:MECH[1],status:'dathanhtoan',date:daysAgo(38),paidAt:daysAgo(38),
+        items:[it('part','p7','Nước làm mát (can 4L)',2,210000),it('service','s3','Cân chỉnh thước lái',1,300000)]},
+      {id:'o7',code:'PSC-0007',vehicleId:'v2',desc:'Thay má phanh trước',mechanic:MECH[2],status:'dathanhtoan',date:daysAgo(67),paidAt:daysAgo(67),
+        items:[it('part','p4','Má phanh trước (bộ)',1,640000),it('service','s2','Công thay má phanh',1,350000)]},
+      {id:'o8',code:'PSC-0008',vehicleId:'v4',desc:'Thay bugi, kiểm tra tổng quát',mechanic:MECH[3],status:'dathanhtoan',date:daysAgo(98),paidAt:daysAgo(98),
+        items:[it('part','p5','Bugi NGK Iridium',4,165000),it('service','s5','Kiểm tra tổng quát 30 hạng mục',1,250000)]},
+      {id:'o9',code:'PSC-0009',vehicleId:'v1',desc:'Bảo dưỡng 60.000 km',mechanic:MECH[0],status:'dathanhtoan',date:daysAgo(128),paidAt:daysAgo(128),
+        items:[it('part','p1','Dầu nhớt 5W-30 (lít)',4,185000),it('part','p2','Lọc dầu Toyota Vios',1,95000),it('service','s5','Kiểm tra tổng quát 30 hạng mục',1,250000)]}
+    ];
+    return {customers:c,vehicles:v,parts:p,services:s,orders:o};
+  }
+
+  var S=null;
+  try{var raw=localStorage.getItem(KEY);if(raw)S=JSON.parse(raw)}catch(e){S=null}
+  if(!S||!S.orders)S=seed();
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+  var view={tab:'tong-quan',orderId:null,filter:'all',q:''};
+  var pendingDel=null;
+  var TABS=[['tong-quan','Tổng quan'],['phieu','Phiếu sửa chữa'],['khach','Khách hàng'],['xe','Xe'],['kho','Phụ tùng'],['hoa-don','Hóa đơn'],['prompt','Prompt']];
+
+  var byId=function(list,id){return list.filter(function(x){return x.id===id})[0]};
+  var cust=function(id){return byId(S.customers,id)||{name:'(đã xóa)'}};
+  var veh=function(id){return byId(S.vehicles,id)||{plate:'?',brand:'',model:''}};
+  var sub=function(o){return o.items.reduce(function(a,i){return a+i.qty*i.price},0)};
+  var vatOf=function(o){return sub(o)*VAT};
+  var total=function(o){return sub(o)+vatOf(o)};
+  var fdate=function(iso){var d=new Date(iso);return d.toLocaleDateString('vi-VN')};
+  var plate=function(p){return '<span class="plate">'+esc(p)+'</span>'};
+  var pill=function(k){var s=st(k);return '<span class="pill '+s.c+'">'+s.t+'</span>'};
+
+  function toast(msg){
+    var t=document.getElementById('toast');t.textContent=msg;t.hidden=false;
+    clearTimeout(toast.h);toast.h=setTimeout(function(){t.hidden=true},2600);
+  }
+
+  /* ---------- modal ---------- */
+  function openModal(title,body,onSubmit,label){
+    var m=document.getElementById('modal');
+    m.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><h2>'+esc(title)+'</h2><form id="mform">'+body+
+      '<div class="row end"><button type="button" class="btn ghost" data-act="close">Hủy</button><button class="btn primary">'+(label||'Lưu')+'</button></div></form></div>';
+    m.hidden=false;
+    var f=document.getElementById('mform');
+    var first=f.querySelector('input,select,textarea');if(first)first.focus();
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      var data={};new FormData(f).forEach(function(v,k){data[k]=String(v).trim()});
+      if(onSubmit(data)!==false){closeModal()}
+    });
+  }
+  function closeModal(){var m=document.getElementById('modal');m.hidden=true;m.innerHTML=''}
+  function fld(name,label,opts){
+    opts=opts||{};
+    var attrs=' id="f-'+name+'" name="'+name+'"'+(opts.req!==false?' required':'')+(opts.val!=null?' value="'+esc(opts.val)+'"':'')+(opts.type?' type="'+opts.type+'"':'')+(opts.min!=null?' min="'+opts.min+'"':'')+(opts.ph?' placeholder="'+esc(opts.ph)+'"':'');
+    return '<label for="f-'+name+'">'+label+'<input'+attrs+'></label>';
+  }
+  function sel(name,label,options,val){
+    return '<label for="f-'+name+'">'+label+'<select id="f-'+name+'" name="'+name+'" required>'+options.map(function(o){return '<option value="'+esc(o[0])+'"'+(o[0]===val?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></label>';
+  }
+
+  /* ---------- renderers ---------- */
+  function renderTabs(){
+    document.getElementById('tabs').innerHTML=TABS.map(function(t){
+      return '<button data-act="tab" data-tab="'+t[0]+'"'+(view.tab===t[0]?' aria-current="page"':'')+'>'+t[1]+'</button>';
+    }).join('');
+  }
+
+  function monthKey(iso){var d=new Date(iso);return d.getFullYear()+'-'+(d.getMonth()+1)}
+
+  function rDash(){
+    var active=S.orders.filter(function(o){return o.status==='tiepnhan'||o.status==='dangsua'});
+    var waiting=S.orders.filter(function(o){return o.status==='hoanthanh'});
+    var now=new Date();var mk=now.getFullYear()+'-'+(now.getMonth()+1);
+    var rev=S.orders.filter(function(o){return o.status==='dathanhtoan'&&monthKey(o.paidAt)===mk}).reduce(function(a,o){return a+total(o)},0);
+    var low=S.parts.filter(function(p){return p.stock<=p.min});
+    var months=[];
+    for(var i=5;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({key:d.getFullYear()+'-'+(d.getMonth()+1),label:'T'+(d.getMonth()+1),sum:0})}
+    S.orders.forEach(function(o){if(o.status==='dathanhtoan'){var m=months.filter(function(x){return x.key===monthKey(o.paidAt)})[0];if(m)m.sum+=total(o)}});
+    var mx=Math.max.apply(null,months.map(function(m){return m.sum}).concat([1]));
+    var h='<div class="tiles">'+
+      '<div class="tile"><div class="k">Xe đang trong gara</div><div class="v">'+active.length+'</div></div>'+
+      '<div class="tile"><div class="k">Chờ thanh toán</div><div class="v">'+waiting.length+'</div></div>'+
+      '<div class="tile"><div class="k">Doanh thu tháng này</div><div class="v">'+fmt(rev)+'</div></div>'+
+      '<div class="tile"><div class="k">Phụ tùng sắp hết</div><div class="v'+(low.length?' warn':'')+'">'+low.length+'</div></div></div>';
+    h+='<div class="grid2"><section class="panel"><h3>Xe đang xử lý</h3>';
+    var cur=active.concat(waiting);
+    if(!cur.length)h+='<div class="empty">Gara đang trống. Tạo phiếu sửa chữa mới ở tab Phiếu sửa chữa.</div>';
+    else h+='<div class="bays">'+cur.map(function(o){var v=veh(o.vehicleId);
+      return '<div class="bay" data-act="open-order" data-id="'+o.id+'" tabindex="0" role="button"><div class="who">'+plate(v.plate)+' <b>'+esc(v.brand+' '+v.model)+'</b><span class="muted">'+esc(cust(v.customerId).name)+'</span></div>'+pill(o.status)+'</div>'}).join('')+'</div>';
+    h+='</section><section class="panel"><h3>Doanh thu 6 tháng gần nhất (gồm VAT)</h3><div class="revbars">'+months.map(function(m){
+      return '<div class="rb"><span class="val">'+(m.sum?new Intl.NumberFormat('vi-VN',{notation:'compact',maximumFractionDigits:1}).format(m.sum):'0')+'</span><div class="col" style="height:'+Math.round(m.sum/mx*110)+'px"></div><span class="mo">'+m.label+'</span></div>'}).join('')+'</div></section></div>';
+    h+='<section class="panel"><h3>Cần nhập thêm</h3>';
+    if(!low.length)h+='<div class="empty">Tồn kho đang đủ.</div>';
+    else h+='<div class="tablebox" style="border:0"><table><thead><tr><th>Mã</th><th>Tên</th><th class="num">Tồn</th><th class="num">Tối thiểu</th></tr></thead><tbody>'+low.map(function(p){
+      return '<tr><td>'+esc(p.sku)+'</td><td>'+esc(p.name)+'</td><td class="num"><span class="pill bad">'+p.stock+'</span></td><td class="num">'+p.min+'</td></tr>'}).join('')+'</tbody></table></div>';
+    return h+'</section>';
+  }
+
+  function searchBar(ph,btn,act){
+    return '<div class="bar"><div class="grow"><input id="q" type="search" placeholder="'+ph+'" value="'+esc(view.q)+'" aria-label="'+ph+'"></div>'+(btn?'<button class="btn primary" data-act="'+act+'">'+btn+'</button>':'')+'</div>';
+  }
+  var match=function(txt){return !view.q||txt.toLowerCase().indexOf(view.q.toLowerCase())>-1};
+  function delBtn(kind,id){var key=kind+':'+id;var armed=pendingDel===key;
+    return '<button class="btn small danger'+(armed?' armed':'')+'" data-act="del" data-kind="'+kind+'" data-id="'+id+'">'+(armed?'Bấm lại để xóa':'Xóa')+'</button>'}
+
+  function rCust(){
+    var rows=S.customers.filter(function(c){return match(c.name+' '+c.phone+' '+c.address)});
+    var h='<div class="bar"><h2>Khách hàng</h2></div>'+searchBar('Tìm theo tên, số điện thoại, địa chỉ','Thêm khách hàng','add-cust');
+    if(!rows.length)return h+'<div class="panel empty">Không có khách hàng phù hợp.</div>';
+    return h+'<div class="tablebox"><table><thead><tr><th>Họ tên</th><th>Điện thoại</th><th>Địa chỉ</th><th class="num">Số xe</th><th class="num">Lần sửa</th><th></th></tr></thead><tbody>'+rows.map(function(c){
+      var vs=S.vehicles.filter(function(v){return v.customerId===c.id});
+      var n=S.orders.filter(function(o){return vs.some(function(v){return v.id===o.vehicleId})}).length;
+      return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.phone)+'</td><td>'+esc(c.address)+'</td><td class="num">'+vs.length+'</td><td class="num">'+n+'</td><td class="num">'+delBtn('cust',c.id)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  }
+
+  function rVeh(){
+    var rows=S.vehicles.filter(function(v){return match(v.plate+' '+v.brand+' '+v.model+' '+cust(v.customerId).name)});
+    var h='<div class="bar"><h2>Xe</h2></div>'+searchBar('Tìm theo biển số, hãng, chủ xe','Thêm xe','add-veh');
+    if(!rows.length)return h+'<div class="panel empty">Không có xe phù hợp.</div>';
+    return h+'<div class="tablebox"><table><thead><tr><th>Biển số</th><th>Xe</th><th class="num">Năm</th><th class="num">Số km</th><th>Chủ xe</th><th></th></tr></thead><tbody>'+rows.map(function(v){
+      return '<tr><td>'+plate(v.plate)+'</td><td>'+esc(v.brand+' '+v.model)+'</td><td class="num">'+v.year+'</td><td class="num">'+new Intl.NumberFormat('vi-VN').format(v.km)+'</td><td>'+esc(cust(v.customerId).name)+'</td><td class="num">'+delBtn('veh',v.id)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  }
+
+  function rParts(){
+    var rows=S.parts.filter(function(p){return match(p.sku+' '+p.name)});
+    var h='<div class="bar"><h2>Phụ tùng</h2></div>'+searchBar('Tìm theo mã hoặc tên phụ tùng','Thêm phụ tùng','add-part');
+    if(!rows.length)return h+'<div class="panel empty">Không có phụ tùng phù hợp.</div>';
+    return h+'<div class="tablebox"><table><thead><tr><th>Mã</th><th>Tên</th><th class="num">Đơn giá</th><th class="num">Tồn</th><th class="num">Tối thiểu</th><th>Tình trạng</th><th></th></tr></thead><tbody>'+rows.map(function(p){
+      var low=p.stock<=p.min;
+      return '<tr><td>'+esc(p.sku)+'</td><td>'+esc(p.name)+'</td><td class="num">'+fmt(p.price)+'</td><td class="num">'+p.stock+'</td><td class="num">'+p.min+'</td><td>'+(low?'<span class="pill bad">Sắp hết</span>':'<span class="pill ok">Đủ hàng</span>')+'</td><td class="num"><button class="btn small" data-act="restock" data-id="'+p.id+'">Nhập thêm</button> '+delBtn('part',p.id)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  }
+
+  function rOrders(){
+    var rows=S.orders.filter(function(o){var v=veh(o.vehicleId);return (view.filter==='all'||o.status===view.filter)&&match(o.code+' '+v.plate+' '+v.brand+' '+v.model+' '+cust(v.customerId).name)}).sort(function(a,b){return b.code.localeCompare(a.code)});
+    var h='<div class="bar"><h2>Phiếu sửa chữa</h2></div>'+searchBar('Tìm theo mã phiếu, biển số, khách hàng','Tạo phiếu mới','add-order');
+    h+='<div class="chips" style="margin-bottom:14px"><button class="chip" data-act="filter" data-k="all" aria-pressed="'+(view.filter==='all')+'">Tất cả</button>'+STATUS.map(function(s){return '<button class="chip" data-act="filter" data-k="'+s.k+'" aria-pressed="'+(view.filter===s.k)+'">'+s.t+'</button>'}).join('')+'</div>';
+    if(!rows.length)return h+'<div class="panel empty">Không có phiếu nào.</div>';
+    return h+'<div class="tablebox"><table><thead><tr><th>Mã phiếu</th><th>Ngày</th><th>Biển số</th><th>Khách hàng</th><th>Thợ</th><th>Trạng thái</th><th class="num">Tổng cộng</th></tr></thead><tbody>'+rows.map(function(o){var v=veh(o.vehicleId);
+      return '<tr class="click" data-act="open-order" data-id="'+o.id+'"><td><b>'+o.code+'</b></td><td>'+fdate(o.date)+'</td><td>'+plate(v.plate)+'</td><td>'+esc(cust(v.customerId).name)+'</td><td>'+esc(o.mechanic)+'</td><td>'+pill(o.status)+'</td><td class="num">'+fmt(total(o))+'</td></tr>'}).join('')+'</tbody></table></div>';
+  }
+
+  function rInvoices(){
+    var paid=S.orders.filter(function(o){return o.status==='dathanhtoan'}).sort(function(a,b){return new Date(b.paidAt)-new Date(a.paidAt)});
+    var sum=paid.reduce(function(a,o){return a+total(o)},0);
+    var h='<div class="bar"><h2>Hóa đơn</h2><span class="muted">'+paid.length+' hóa đơn · tổng '+fmt(sum)+'</span></div>';
+    if(!paid.length)return h+'<div class="panel empty">Chưa có hóa đơn. Hóa đơn xuất hiện sau khi thanh toán một phiếu sửa chữa.</div>';
+    return h+'<div class="tablebox"><table><thead><tr><th>Số hóa đơn</th><th>Ngày thanh toán</th><th>Khách hàng</th><th>Biển số</th><th class="num">Tiền hàng</th><th class="num">VAT 10%</th><th class="num">Tổng cộng</th></tr></thead><tbody>'+paid.map(function(o){var v=veh(o.vehicleId);
+      return '<tr class="click" data-act="open-order" data-id="'+o.id+'"><td><b>'+o.code.replace('PSC','HD')+'</b></td><td>'+fdate(o.paidAt)+'</td><td>'+esc(cust(v.customerId).name)+'</td><td>'+plate(v.plate)+'</td><td class="num">'+fmt(sub(o))+'</td><td class="num">'+fmt(vatOf(o))+'</td><td class="num"><b>'+fmt(total(o))+'</b></td></tr>'}).join('')+'</tbody></table></div>';
+  }
+
+  function rPrompt(){
+    var src=document.getElementById('prompt-src').innerHTML;
+    var ta=document.createElement('textarea');ta.innerHTML=src;
+    return '<div class="bar"><h2>Prompt All (Final)</h2><button class="btn primary" data-act="copy-prompt">Sao chép prompt</button></div><section class="panel"><pre class="prompt" id="prompt-text">'+esc(ta.value.trim())+'</pre></section>';
+  }
+
+  function rOrderDetail(){
+    var o=byId(S.orders,view.orderId);
+    if(!o){view.orderId=null;return rOrders()}
+    var v=veh(o.vehicleId),c=cust(v.customerId),s=st(o.status),paid=o.status==='dathanhtoan';
+    var h='<div class="bar"><button class="btn small" data-act="back">← Quay lại danh sách</button></div>';
+    h+='<section class="panel"><div class="detail-head"><div class="meta"><h2>'+(paid?'Hóa đơn '+o.code.replace('PSC','HD'):'Phiếu '+o.code)+'</h2>'+
+      '<div>'+plate(v.plate)+' <b>'+esc(v.brand+' '+v.model)+'</b> · '+new Intl.NumberFormat('vi-VN').format(v.km)+' km</div>'+
+      '<div class="muted">'+esc(c.name)+' · '+esc(c.phone||'')+'</div>'+
+      '<div class="muted">Tiếp nhận '+fdate(o.date)+' · Thợ: '+esc(o.mechanic)+(paid?' · Thanh toán '+fdate(o.paidAt):'')+'</div>'+
+      '<div style="margin-top:6px">Tình trạng: '+esc(o.desc)+'</div></div>'+
+      '<div style="display:grid;gap:8px;justify-items:end">'+pill(o.status)+(s.next?'<button class="btn primary" data-act="advance" data-id="'+o.id+'">'+s.next+'</button>':'')+'</div></div>';
+    h+='<div class="tablebox"><table><thead><tr><th>Loại</th><th>Nội dung</th><th class="num">Đơn giá</th><th class="num">SL</th><th class="num">Thành tiền</th>'+(paid?'':'<th></th>')+'</tr></thead><tbody>';
+    if(!o.items.length)h+='<tr><td colspan="6" class="empty">Chưa có dịch vụ hoặc phụ tùng. Thêm ở bên dưới.</td></tr>';
+    o.items.forEach(function(i){
+      h+='<tr><td>'+(i.type==='part'?'Phụ tùng':'Dịch vụ')+'</td><td>'+esc(i.name)+'</td><td class="num">'+fmt(i.price)+'</td><td class="num">'+i.qty+'</td><td class="num">'+fmt(i.qty*i.price)+'</td>'+(paid?'':'<td class="num"><button class="btn small danger" data-act="rm-item" data-id="'+i.id+'">Bỏ</button></td>')+'</tr>';
+    });
+    h+='</tbody></table></div>';
+    if(!paid){
+      h+='<form class="addline" id="addline"><label for="al-type">Loại<select id="al-type"><option value="service">Dịch vụ</option><option value="part">Phụ tùng</option></select></label>'+
+        '<label class="wide" for="al-item">Chọn mục<select id="al-item"></select></label>'+
+        '<label for="al-qty">Số lượng<input id="al-qty" type="number" min="1" value="1"></label>'+
+        '<button class="btn primary" type="submit">Thêm</button></form>';
+    }
+    h+='<div class="totals"><div><span class="muted">Tạm tính</span><span>'+fmt(sub(o))+'</span></div><div><span class="muted">VAT 10%</span><span>'+fmt(vatOf(o))+'</span></div><div class="grand"><span>Tổng cộng</span><span>'+fmt(total(o))+'</span></div></div></section>';
+    return h;
+  }
+
+  function fillAddline(){
+    var t=document.getElementById('al-type'),it=document.getElementById('al-item');
+    if(!t||!it)return;
+    var list=t.value==='part'?S.parts:S.services;
+    it.innerHTML=list.map(function(x){return '<option value="'+x.id+'">'+esc(x.name)+' · '+fmt(x.price)+(t.value==='part'?' (tồn '+x.stock+')':'')+'</option>'}).join('');
+  }
+
+  function render(){
+    renderTabs();
+    var m=document.getElementById('main');
+    var f={'tong-quan':rDash,phieu:view.orderId?rOrderDetail:rOrders,khach:rCust,xe:rVeh,kho:rParts,'hoa-don':view.orderId?rOrderDetail:rInvoices,prompt:rPrompt}[view.tab];
+    m.innerHTML=f();
+    fillAddline();
+    var t=document.getElementById('al-type');if(t)t.addEventListener('change',fillAddline);
+    var al=document.getElementById('addline');if(al)al.addEventListener('submit',addLine);
+    var q=document.getElementById('q');
+    if(q){q.addEventListener('input',function(){view.q=q.value;var pos=q.selectionStart;render();var n=document.getElementById('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}})}
+  }
+
+  /* ---------- actions ---------- */
+  function addLine(e){
+    e.preventDefault();
+    var o=byId(S.orders,view.orderId);if(!o)return;
+    var type=document.getElementById('al-type').value,id=document.getElementById('al-item').value,qty=parseInt(document.getElementById('al-qty').value,10);
+    if(!(qty>0)){toast('Số lượng phải lớn hơn 0.');return}
+    if(type==='part'){
+      var p=byId(S.parts,id);
+      if(!p)return;
+      if(p.stock<qty){toast('Kho chỉ còn '+p.stock+' '+p.name+'.');return}
+      p.stock-=qty;
+      var ex=o.items.filter(function(i){return i.type==='part'&&i.refId===id})[0];
+      if(ex)ex.qty+=qty;else o.items.push({id:uid(),type:'part',refId:id,name:p.name,qty:qty,price:p.price});
+    }else{
+      var s=byId(S.services,id);if(!s)return;
+      var ex2=o.items.filter(function(i){return i.type==='service'&&i.refId===id})[0];
+      if(ex2)ex2.qty+=qty;else o.items.push({id:uid(),type:'service',refId:id,name:s.name,qty:qty,price:s.price});
+    }
+    save();render();toast('Đã thêm vào phiếu.');
+  }
+
+  function nextCode(){
+    var mx=S.orders.reduce(function(a,o){return Math.max(a,parseInt(o.code.split('-')[1],10)||0)},0);
+    return 'PSC-'+String(mx+1).padStart(4,'0');
+  }
+
+  var actions={
+    tab:function(el){view.tab=el.dataset.tab;view.orderId=null;view.q='';pendingDel=null;render();window.scrollTo(0,0)},
+    close:closeModal,
+    reset:function(){S=seed();save();view={tab:'tong-quan',orderId:null,filter:'all',q:''};render();toast('Đã nạp lại dữ liệu mẫu.')},
+    filter:function(el){view.filter=el.dataset.k;render()},
+    'open-order':function(el){view.orderId=el.dataset.id;if(view.tab==='tong-quan')view.tab='phieu';render();window.scrollTo(0,0)},
+    back:function(){view.orderId=null;render()},
+    advance:function(el){
+      var o=byId(S.orders,el.dataset.id);if(!o)return;
+      if(o.status==='hoanthanh'){
+        if(!o.items.length){toast('Phiếu chưa có dòng nào để thanh toán.');return}
+        o.status='dathanhtoan';o.paidAt=new Date().toISOString();toast('Đã thanh toán. Hóa đơn '+o.code.replace('PSC','HD')+' đã được tạo.');
+      }else{
+        var idx=STATUS.map(function(s){return s.k}).indexOf(o.status);o.status=STATUS[idx+1].k;toast('Trạng thái: '+st(o.status).t);
+      }
+      save();render();
+    },
+    'rm-item':function(el){
+      var o=byId(S.orders,view.orderId);if(!o)return;
+      var i=byId(o.items,el.dataset.id);if(!i)return;
+      if(i.type==='part'){var p=byId(S.parts,i.refId);if(p)p.stock+=i.qty}
+      o.items=o.items.filter(function(x){return x.id!==i.id});save();render();toast('Đã bỏ khỏi phiếu'+(i.type==='part'?' và hoàn lại kho.':'.'));
+    },
+    del:function(el){
+      var kind=el.dataset.kind,id=el.dataset.id,key=kind+':'+id;
+      if(pendingDel!==key){pendingDel=key;render();setTimeout(function(){if(pendingDel===key){pendingDel=null;render()}},3500);return}
+      pendingDel=null;
+      if(kind==='cust'){
+        if(S.vehicles.some(function(v){return v.customerId===id})){toast('Khách hàng này còn xe. Hãy xóa hoặc chuyển xe trước.');render();return}
+        S.customers=S.customers.filter(function(x){return x.id!==id});
+      }else if(kind==='veh'){
+        if(S.orders.some(function(o){return o.vehicleId===id})){toast('Xe này đã có phiếu sửa chữa nên không thể xóa.');render();return}
+        S.vehicles=S.vehicles.filter(function(x){return x.id!==id});
+      }else if(kind==='part'){
+        S.parts=S.parts.filter(function(x){return x.id!==id});
+      }
+      save();render();toast('Đã xóa.');
+    },
+    'add-cust':function(){
+      openModal('Thêm khách hàng',fld('name','Họ tên')+fld('phone','Số điện thoại',{type:'tel'})+fld('address','Địa chỉ',{req:false}),function(d){
+        S.customers.push({id:uid(),name:d.name,phone:d.phone,address:d.address});save();render();toast('Đã thêm khách hàng.');
+      });
+    },
+    'add-veh':function(){
+      if(!S.customers.length){toast('Hãy thêm khách hàng trước.');return}
+      openModal('Thêm xe',fld('plate','Biển số',{ph:'43A-123.45'})+'<div class="row2">'+fld('brand','Hãng',{ph:'Toyota'})+fld('model','Dòng xe',{ph:'Vios'})+'</div><div class="row2">'+fld('year','Năm sản xuất',{type:'number',min:1980,val:new Date().getFullYear()-3})+fld('km','Số km',{type:'number',min:0,val:0})+'</div>'+
+        sel('customerId','Chủ xe',S.customers.map(function(c){return [c.id,c.name]})),function(d){
+        var pl=d.plate.toUpperCase();
+        if(S.vehicles.some(function(v){return v.plate.toUpperCase()===pl})){toast('Biển số '+pl+' đã có trong hệ thống.');return false}
+        S.vehicles.push({id:uid(),plate:pl,brand:d.brand,model:d.model,year:parseInt(d.year,10),km:parseInt(d.km,10)||0,customerId:d.customerId});save();render();toast('Đã thêm xe.');
+      });
+    },
+    'add-part':function(){
+      openModal('Thêm phụ tùng',fld('sku','Mã phụ tùng')+fld('name','Tên phụ tùng')+'<div class="row2">'+fld('price','Đơn giá (₫)',{type:'number',min:0})+fld('stock','Tồn kho',{type:'number',min:0,val:0})+'</div>'+fld('min','Mức tồn tối thiểu',{type:'number',min:0,val:3}),function(d){
+        if(S.parts.some(function(p){return p.sku.toLowerCase()===d.sku.toLowerCase()})){toast('Mã '+d.sku+' đã tồn tại.');return false}
+        S.parts.push({id:uid(),sku:d.sku.toUpperCase(),name:d.name,price:parseInt(d.price,10)||0,stock:parseInt(d.stock,10)||0,min:parseInt(d.min,10)||0});save();render();toast('Đã thêm phụ tùng.');
+      });
+    },
+    restock:function(el){
+      var p=byId(S.parts,el.dataset.id);if(!p)return;
+      openModal('Nhập thêm: '+p.name,fld('qty','Số lượng nhập',{type:'number',min:1,val:10}),function(d){
+        var q=parseInt(d.qty,10);if(!(q>0)){toast('Số lượng phải lớn hơn 0.');return false}
+        p.stock+=q;save();render();toast('Đã nhập '+q+' vào kho.');
+      },'Nhập kho');
+    },
+    'add-order':function(){
+      if(!S.vehicles.length){toast('Hãy thêm xe trước.');return}
+      openModal('Tạo phiếu sửa chữa',sel('vehicleId','Xe',S.vehicles.map(function(v){return [v.id,v.plate+' · '+v.brand+' '+v.model+' · '+cust(v.customerId).name]}))+
+        '<label for="f-desc">Tình trạng, yêu cầu của khách<textarea id="f-desc" name="desc" rows="3" required></textarea></label>'+
+        sel('mechanic','Thợ phụ trách',MECH.map(function(m){return [m,m]})),function(d){
+        var o={id:uid(),code:nextCode(),vehicleId:d.vehicleId,desc:d.desc,mechanic:d.mechanic,status:'tiepnhan',date:new Date().toISOString(),paidAt:null,items:[]};
+        S.orders.push(o);save();view.tab='phieu';view.orderId=o.id;render();toast('Đã tạo phiếu '+o.code+'.');
+      },'Tạo phiếu');
+    },
+    'copy-prompt':function(){
+      var t=document.getElementById('prompt-text').textContent;
+      var ok=function(){toast('Đã sao chép prompt.')};
+      var fb=function(){var r=document.createRange();r.selectNodeContents(document.getElementById('prompt-text'));var s=window.getSelection();s.removeAllRanges();s.addRange(r);toast('Đã chọn văn bản. Nhấn Ctrl+C để sao chép.')};
+      try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}
+    }
+  };
+
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('[data-act]');
+    if(!el){if(e.target.id==='modal')closeModal();return}
+    var fn=actions[el.dataset.act];if(fn)fn(el);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape')closeModal();
+    if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.bay[data-act]')){e.preventDefault();actions['open-order'](e.target)}
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
